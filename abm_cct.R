@@ -1,14 +1,12 @@
 # =========================
 # 0) Paquetes y semilla
 # =========================
-
 library(ABM)        # Carga el paquete ABM: define Simulation, Event, counters, etc.
 set.seed(1)         # Fija la semilla para que los resultados sean reproducibles
 
 # =========================
 # 1) Parámetros del modelo
 # =========================
-
 N      <- 5000     # Número de hogares (cada uno es un "agente")
 Tmax   <- 36       # Número de meses (ticks) a simular
 transfer_amount <- 600           # Monto nominal mensual del programa ($600)
@@ -19,7 +17,6 @@ lambda_cred     <- 0.30          # Qué tan rápido "aprende" la credibilidad (p
 # =====================================
 # 2) Crear simulación y estado inicial
 # =====================================
-
 # En ABM, el "estado" principal del agente será un string: "A" (asiste) o "N" (no asiste).
 # Además guardamos atributos por agente: 
 #   - theta: umbral individual de decisión
@@ -46,7 +43,6 @@ for (i in 1:N) {    # Recorremos todos los agentes para fijar su estado inicial
 # ======================================
 # 3) Loggers (contadores automáticos)
 # ======================================
-
 # newCounter(nombre, desde): crea un contador que, en cada tick, cuenta cuántos agentes
 # están en un cierto estado "desde". 
 # Aquí contamos cuántos están en "A" y cuántos en "N" en cada tiempo.
@@ -55,8 +51,7 @@ sim$addLogger(newCounter("N", "N"))  # cuántos no asisten
 
 # =========================================================
 # 4) Handler mensual (la “dinámica” que corre cada mes)
-# =========================================================
-
+# ========================================================
 # ABM dispara funciones "handler" programadas como eventos. 
 # La firma SIEMPRE es: function(time, sim, agent)
 #   - time : tiempo actual (mes)
@@ -99,9 +94,6 @@ tick_handler <- function(time, sim, agent) {   # Recorremos TODOS los agentes y 
   if (time < Tmax) schedule(agent, newEvent(time + 1, tick_handler))
 }
 
-
-
-
 # runif(1) genera un número aleatorio uniforme entre 0 y 1. Por ejemplo, puede salir 0.13, 0.72, 0.99, etc.
 # delay_prob_base es la probabilidad de que el pago se retrase, o sea falle.
 # delay_prob_base <- 0.30 = 30% de probabilidad de retraso (y por tanto 70% de que llegue a tiempo).
@@ -125,7 +117,6 @@ tick_handler <- function(time, sim, agent) {   # Recorremos TODOS los agentes y 
 # ==============================
 # 5) Ejecutar la simulación
 # ==============================
-
 # Programamos el primer “tick” en t = 0 sobre la entidad 'sim$get' (el agente "Simulación")
 schedule(sim$get, newEvent(0, tick_handler))
 
@@ -138,15 +129,8 @@ res <- sim$run(0:Tmax)     # data.frame con columnas: time, A, N
 res$attend <- res$A / N
 
 # ==============================
-# 6) Gráfico rápido base R
+# 6) Gráfico
 # ==============================
-
-plot(res$times, res$attend, type="l", lwd=2, ylim=c(0,1),
-     xlab="Mes", ylab="% que asiste",
-     main="CCT mínimo (umbral + credibilidad)")
-
-
-
 library(ggplot2)
 
 p <- ggplot(res, aes(x = times, y = attend)) +
@@ -158,8 +142,5 @@ p <- ggplot(res, aes(x = times, y = attend)) +
 
 p
 
-# guarda en PNG (raster)
+# guarda en PNG
 ggsave("asistencia_cct.png", plot = p, width = 8, height = 5, dpi = 300)
-
-
-
