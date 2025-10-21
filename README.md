@@ -1,3 +1,5 @@
+cct_per_child/README.md
+
 # 1) Preparación
    
 **Paquete y semilla.**
