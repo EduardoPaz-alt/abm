@@ -31,6 +31,8 @@ seedA <- 10  # Cantidad de hogares que ya comienzan asistiendo en t=0
 for (i in 1:N) {    # Recorremos todos los agentes para fijar su estado inicial
   theta <- rnorm(1, mean = 300, sd = 80)     # Umbral heterogéneo ~ Normal(300, 80)
   cred0 <- 1 - delay_prob_base               # Credibilidad inicial (ej.: 0.70)
+  # Nuevo: probabilidad de tener empleo
+  # trabaja <- runif(1) < 0.40   # 40% de los hogares trabajan (TRUE/FALSE)
   state0 <- if (i <= seedA) "A" else "N"      # Primeros 'seedA' agentes arrancan en "A", el resto "N"
   sim$setState(i, list(state0, theta = theta, cred = cred0))        
 }
@@ -68,6 +70,13 @@ tick_handler <- function(time, sim, agent) {   # Recorremos TODOS los agentes y 
     # Beneficio esperado este mes: monto * credibilidad percibida
     benefit   <- transfer_amount * st$cred
     
+    # Si trabaja correr en lugar de regla de decisión mínima
+# if (st$trabaja) {
+#   new_state <- "N"  # Si trabaja, no asiste
+# } else {
+#  new_state <- if (benefit >= st$theta) "A" else "N"
+# }
+    
     # Regla de decisión mínima:
     #   Asiste si el beneficio esperado supera su umbral theta
     new_state <- if (benefit >= st$theta) "A" else "N"
@@ -79,6 +88,8 @@ tick_handler <- function(time, sim, agent) {   # Recorremos TODOS los agentes y 
     cred_new <- (1 - lambda_cred) * st$cred + lambda_cred * as.numeric(paid_on_time)
     
     # Guardamos nuevo estado + atributos (con el theta que no cambia)
+    # o ejecutamos trabajo
+    # setState(ai, list(new_state, theta = st$theta, cred = cred_new, trabaja = st$trabaja))
     setState(ai, list(new_state, theta = st$theta, cred = cred_new))
   }
   
@@ -148,4 +159,5 @@ p
 
 # guarda en PNG (raster)
 ggsave("asistencia_cct.png", plot = p, width = 8, height = 5, dpi = 300)
+
 
