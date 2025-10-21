@@ -85,11 +85,11 @@ Resultado: `paid_on_time` es TRUE (puntual) o FALSE (tardío).
 
 `as.numeric(paid_on_time)` convierte:
 
-TRUE = 1 (pago puntual)
+`TRUE` = 1 (pago puntual)
 
-FALSE = 0 (pago tardío / no asistió
+`FALSE` = 0 (pago tardío / no asistió
 
-Orden de operación: 
+**Orden de operación:** 
 
 1. Calcula el peso de ayer: `1 - lambda_cred.`
 
@@ -106,9 +106,38 @@ Si se retrasó (0), cred baja hacia 0.
 
 Importante: theta no cambia; es un rasgo fijo del hogar en este modelo.
 
-Guardar nuevo estado y atributos:
-setState(ai, list(new_state, theta = st$theta, cred = cred_new)).
+- **Guardar nuevo estado y atributos:**
+`setState(ai, list(new_state, theta = st$theta, cred = cred_new)).`
 
-Re-agendar el evento para el próximo mes (si time < Tmax):
-schedule(agent, newEvent(time + 1, tick_handler)).
+**2. Re-agendar el evento** para el próximo mes (si time < Tmax):
+`schedule(agent, newEvent(time + 1, tick_handler)).`
 Así, el mismo handler se ejecuta en t=1,2,…,Tmax.
+
+# 6) Ejecutar la simulación
+
+`schedule(sim$get, newEvent(0, tick_handler))` agenda el primer tick en t=0.
+
+`res <- sim$run(0:Tmax)` corre todo y regresa un data.frame con: times (el mes); A y N (los contadores de asistencia/no asistencia).
+
+Luego calculas la proporción que asiste:
+`res$attend <- res$A / N.`
+
+# Qué está modelando
+
+- **Micro‐regla:** cada hogar decide A/N comparando su beneficio esperado `(monto * cred)` con su umbral `(theta).`
+
+- **Aprendizaje:** la credibilidad se mueve según la experiencia reciente con el programa (pagos puntuales vs retrasos).
+
+- **Efecto esperado:**
+
+1. Si los pagos suelen llegar a tiempo (prob. alta de éxito), `cred` tenderá a subir y más hogares asistirán.
+
+2. Si hay muchos retrasos, `cred` cae y la asistencia se erosiona.
+
+3. `lambda_cred` controla cuán sensible es la credibilidad a experiencias recientes.
+
+# Lectura de resultados
+
+- Curva de `attend`: debería estabilizarse en algún nivel, subir o bajar según el balance entre el umbral promedio `(theta)` y la credibilidad endógena que se va formando por la puntualidad de pagos.
+
+- `Con delay_prob_base = 0.30` (70% de puntualidad) y umbrales ~N(300,80) con `transfer_amount=600`, es razonable ver asistencia media-alta que quizá suba al inicio (la credibilidad parte en 0.70 y puede reforzarse si la suerte acompaña).
