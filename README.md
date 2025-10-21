@@ -47,21 +47,58 @@ La función `tick_handler(time, sim, agent)` define qué pasa cada mes. Dentro:
 
 **1. Recorres los N agentes** `(bucle for (i in 1:N)):`
 
-- `ai <- getAgent(sim, i)` y st <- getState(ai) para leer estado y atributos actuales.
+- `ai <- getAgent(sim, i)` y `st <- getState(ai)` para leer estado y atributos actuales.
 
-Beneficio esperado este mes: benefit = transfer_amount * st$cred.
-(Si la credibilidad es alta, el monto “esperado” es más alto.)
+`st` la info actual del agente (estado, umbral, credibilidad) y trae tres cosas:
 
-Regla de decisión mínima:
-new_state <- if (benefit >= st$theta) "A" else "N".
+1. `st[[1]]` su estado: "A" (asiste) o "N" (no asiste)
+
+2. `st$theta` su umbral para decidir (qué tanto beneficio necesita)
+
+3. `st$cred` su credibilidad (0 a 1) sobre que el pago llegue a tiempo
+
+- **Beneficio esperado** este mes: `benefit = transfer_amount * st$cred.`
+Esto representa el valor esperado del pago: el monto nominal ($600) multiplicado por la probabilidad percibida de que el pago llegue a tiempo.
+Así, si la credibilidad (cred) es alta, el hogar espera obtener más beneficio (porque confía en que sí cobrará); si es baja, el beneficio esperado disminuye, aunque el monto nominal sea el mismo.
+
+- **Regla de decisión** mínima:
+`new_state <- if (benefit >= st$theta) "A" else "N".`
 El hogar asiste si el beneficio esperado supera su umbral.
 
-Realización del pago a tiempo (solo si decidió asistir):
-paid_on_time <- (new_state == "A") && (runif(1) > delay_prob_base).
+- **Realización del pago a tiempo** (solo si decidió asistir):
+`paid_on_time <- (new_state == "A") && (runif(1) > delay_prob_base).`
+
 Es decir, tiras una moneda: con prob. 0.70 llega a tiempo; con 0.30 se retrasa.
 
-Actualización de credibilidad (EMA/promedio móvil exponencial):
-cred_new <- (1 - lambda_cred) * st$cred + lambda_cred*as.numeric(paid_on_time)
+Solo si el hogar asistió `(new_state == "A")` sorteas si el pago fue puntual.
+
+`runif(1)` genera un número entre 0 y 1. Con `delay_prob_base = 0.30,` hay 70% de que sea puntual (número > 0.30).
+
+Resultado: `paid_on_time` es TRUE (puntual) o FALSE (tardío).
+(Si no asistió, la expresión completa da FALSE por el &&.)
+
+- **Actualización de credibilidad** (EMA/promedio móvil exponencial): es una forma de actualizar un valor con el tiempo dando más peso a lo reciente y menos a lo pasado. Se llama "exponencial" porque el peso de lo ocurrido en meses anteriores se va haciendo cada vez más pequeño (decae exponencialmente) conforme pasa el tiempo. Lo controla un número entre 0 y 1 llamado lambda: p. ej., 0.1 cambias poco cada mes (recuerdas más el pasado); p. ej., 0.8 cambias mucho cada mes (te influye más lo reciente).
+  
+`cred_new <- (1 - lambda_cred) * st$cred + lambda_cred*as.numeric(paid_on_time)`
+
+`st$cred` = credibilidad anterior (del mes pasado).
+
+`as.numeric(paid_on_time)` convierte:
+
+TRUE = 1 (pago puntual)
+
+FALSE = 0 (pago tardío / no asistió
+
+Orden de operación: 
+
+1. Calcula el peso de ayer: `1 - lambda_cred.`
+
+2. Multiplica ese peso por la credibilidad anterior: `(1 - lambda_cred) * st$cred.`
+
+3. Convierte paid_on_time a número (1 o 0) y multiplícalo por el peso de hoy:
+`lambda_cred * as.numeric(paid_on_time).`
+
+4. Suma las dos partes. Eso es `cred_new.`
 
 Si pagaron a tiempo (1), cred sube hacia 1.
 
