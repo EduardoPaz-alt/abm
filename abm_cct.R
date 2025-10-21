@@ -34,7 +34,8 @@ for (i in 1:N) {    # Recorremos todos los agentes para fijar su estado inicial
   # Nuevo: probabilidad de tener empleo
   # trabaja <- runif(1) < 0.40   # 40% de los hogares trabajan (TRUE/FALSE)
   state0 <- if (i <= seedA) "A" else "N"      # Primeros 'seedA' agentes arrancan en "A", el resto "N"
-  sim$setState(i, list(state0, theta = theta, cred = cred0))        
+  sim$setState(i, list(state0, theta = theta, cred = cred0))  
+  # o cambiar si trabaja por   sim$setState(i, list(state0, theta = theta, cred = cred0, trabaja = trabaja))
 }
 # setState(indice, lista): 
 #   - el primer elemento de la lista es el ESTADO ("A"/"N")
@@ -159,5 +160,6 @@ p
 
 # guarda en PNG (raster)
 ggsave("asistencia_cct.png", plot = p, width = 8, height = 5, dpi = 300)
+
 
 
